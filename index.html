@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MathFlow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0f0f8;
+    --muted: rgba(240,240,248,0.5);
+    --accent: #7c6af7;
+    --accent2: #a599ff;
+    --green: #3ecf8e;
+    --amber: #f5a623;
+    --red: #f06565;
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --radius: 12px;
+    --radius-lg: 18px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .nav-logo span { color: var(--accent2); }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab {
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.15s;
+    font-family: var(--font-body);
+  }
+  .nav-tab.active { background: var(--accent); color: #fff; }
+  .nav-tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
+
+  /* VIEWS */
+  .view { display: none; padding: 24px; max-width: 960px; margin: 0 auto; }
+  .view.active { display: block; }
+
+  /* STUDENT VIEW */
+  .student-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .student-avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #c084fc);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700; font-size: 18px;
+  }
+  .student-greeting h1 {
+    font-family: var(--font-display);
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .student-greeting p { color: var(--muted); font-size: 13px; }
+
+  .streak-bar {
+    display: flex; gap: 8px; margin-bottom: 28px;
+  }
+  .streak-day {
+    flex: 1; height: 6px; border-radius: 3px;
+    background: var(--surface2);
+    transition: background 0.3s;
+  }
+  .streak-day.done { background: var(--accent); }
+  .streak-day.today { background: var(--accent2); }
+
+  .topic-chips {
+    display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .chip {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--muted);
+  }
+  .chip.active {
+    background: rgba(124,106,247,0.2);
+    border-color: var(--accent);
+    color: var(--accent2);
+  }
+
+  /* QUESTION CARD */
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .question-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), #c084fc);
+  }
+  .q-meta {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .q-topic {
+    font-size: 11px; font-weight: 600; letter-spacing: 1px;
+    color: var(--accent2); text-transform: uppercase;
+  }
+  .q-number {
+    font-size: 12px; color: var(--muted);
+  }
+  .q-text {
+    font-family: var(--font-display);
+    font-size: 20px; font-weight: 600;
+    line-height: 1.4; margin-bottom: 24px;
+    letter-spacing: -0.3px;
+  }
+  .q-input-row {
+    display: flex; gap: 10px; align-items: center;
+  }
+  .q-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 18px; font-family: var(--font-display);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .q-input:focus { border-color: var(--accent); }
+  .q-input.correct { border-color: var(--green); background: rgba(62,207,142,0.08); }
+  .q-input.wrong { border-color: var(--red); background: rgba(240,101,101,0.08); }
+
+  .btn {
+    padding: 12px 22px;
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-weight: 500; font-size: 14px;
+    cursor: pointer; border: none;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border2);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+
+  .feedback-box {
+    margin-top: 16px;
+    padding: 16px 18px;
+    border-radius: var(--radius);
+    font-size: 14px; line-height: 1.6;
+    display: none;
+  }
+  .feedback-box.correct {
+    background: rgba(62,207,142,0.1);
+    border: 1px solid rgba(62,207,142,0.25);
+    color: #7eefc0;
+    display: block;
+  }
+  .feedback-box.wrong {
+    background: rgba(240,101,101,0.1);
+    border: 1px solid rgba(240,101,101,0.25);
+    color: #f09090;
+    display: block;
+  }
+  .feedback-box.hint {
+    background: rgba(124,106,247,0.1);
+    border: 1px solid rgba(124,106,247,0.25);
+    color: var(--accent2);
+    display: block;
+  }
+  .feedback-box.loading {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    display: block;
+  }
+
+  .hint-btn {
+    font-size: 12px; color: var(--muted);
+    cursor: pointer; background: none; border: none;
+    font-family: var(--font-body);
+    padding: 8px 0; text-decoration: underline;
+    display: block; margin-top: 8px;
+  }
+  .hint-btn:hover { color: var(--accent2); }
+
+  .progress-row {
+    display: flex; gap: 8px; margin-bottom: 20px;
+  }
+  .progress-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1.5px solid var(--border2);
+    transition: all 0.3s;
+  }
+  .progress-dot.done { background: var(--green); border-color: var(--green); }
+  .progress-dot.active { background: var(--accent); border-color: var(--accent); transform: scale(1.3); }
+
+  .session-complete {
+    text-align: center; padding: 48px 24px;
+    display: none;
+  }
+  .session-complete.show { display: block; }
+  .complete-icon {
+    font-size: 56px; margin-bottom: 16px;
+  }
+  .complete-title {
+    font-family: var(--font-display);
+    font-size: 28px; font-weight: 800;
+    margin-bottom: 8px; letter-spacing: -1px;
+  }
+  .complete-sub { color: var(--muted); margin-bottom: 28px; }
+  .xp-badge {
+    display: inline-block;
+    background: rgba(124,106,247,0.2);
+    border: 1px solid var(--accent);
+    color: var(--accent2);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 600; font-size: 16px;
+    margin-bottom: 24px;
+  }
+
+  /* TEACHER DASHBOARD */
+  .dashboard-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .dashboard-header h1 {
+    font-family: var(--font-display);
+    font-size: 24px; font-weight: 700; letter-spacing: -0.5px;
+  }
+  .dashboard-header p { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .stat-label { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px; }
+  .stat-value { font-family: var(--font-display); font-size: 28px; font-weight: 700; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.amber { color: var(--amber); }
+  .stat-value.red { color: var(--red); }
+  .stat-delta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  .students-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+  }
+
+  .student-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .student-card:hover { border-color: var(--accent); }
+  .student-card.selected { border-color: var(--accent); background: rgba(124,106,247,0.05); }
+
+  .sc-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+  }
+  .sc-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-weight: 700; font-size: 14px;
+    flex-shrink: 0;
+  }
+  .sc-name { font-weight: 500; font-size: 15px; }
+  .sc-year { font-size: 12px; color: var(--muted); }
+
+  .momentum-badge {
+    margin-left: auto;
+    font-size: 11px; padding: 3px 10px;
+    border-radius: 10px; font-weight: 500;
+  }
+  .momentum-up { background: rgba(62,207,142,0.15); color: var(--green); }
+  .momentum-flat { background: rgba(245,166,35,0.15); color: var(--amber); }
+  .momentum-down { background: rgba(240,101,101,0.15); color: var(--red); }
+
+  .topic-rag {
+    display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .rag-chip {
+    font-size: 10px; padding: 3px 9px; border-radius: 8px; font-weight: 500;
+  }
+  .rag-green { background: rgba(62,207,142,0.15); color: var(--green); }
+  .rag-amber { background: rgba(245,166,35,0.15); color: var(--amber); }
+  .rag-red { background: rgba(240,101,101,0.15); color: var(--red); }
+
+  .sparkline {
+    height: 32px; width: 100%;
+    display: flex; align-items: flex-end; gap: 3px;
+  }
+  .spark-bar {
+    flex: 1; border-radius: 3px 3px 0 0;
+    background: var(--surface2);
+    transition: height 0.3s;
+    min-height: 4px;
+  }
+  .spark-bar.active { background: var(--accent); }
+
+  /* DETAIL PANEL */
+  .detail-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-top: 20px;
+    display: none;
+  }
+  .detail-panel.show { display: block; }
+  .detail-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .detail-header h2 {
+    font-family: var(--font-display); font-size: 18px; font-weight: 700;
+  }
+  .ai-insight {
+    background: rgba(124,106,247,0.08);
+    border: 1px solid rgba(124,106,247,0.2);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 13px; line-height: 1.7;
+    color: var(--accent2);
+    margin-bottom: 16px;
+  }
+  .ai-insight strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; opacity: 0.7; }
+  .detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; margin-bottom: 16px;
+  }
+  .detail-stat {
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .detail-stat-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .detail-stat-value { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+
+  .teacher-note-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    resize: vertical; min-height: 80px;
+    outline: none;
+    margin-bottom: 10px;
+  }
+  .teacher-note-input:focus { border-color: var(--accent); }
+
+  /* LOADING */
+  .loading-dots span {
+    animation: blink 1.4s infinite;
+    opacity: 0;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100% { opacity:0 } 40% { opacity:1 } }
+
+  /* API KEY SETUP */
+  .setup-banner {
+    background: rgba(245,166,35,0.1);
+    border: 1px solid rgba(245,166,35,0.3);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 13px; color: var(--amber);
+  }
+  .setup-banner input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px; outline: none;
+  }
+  .setup-banner input:focus { border-color: var(--amber); }
+
+  @media (max-width: 600px) {
+    .view { padding: 16px; }
+    .q-text { font-size: 17px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .detail-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">Math<span>Flow</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchView('student')">Student</button>
+    <button class="nav-tab" onclick="switchView('teacher')">Teacher</button>
+  </div>
+</nav>
+
+<!-- STUDENT VIEW -->
+<div class="view active" id="view-student">
+
+  <div id="api-banner" class="setup-banner">
+    ⚠️ Add your Anthropic API key to enable AI:
+    <input type="password" id="api-key-input" placeholder="sk-ant-..." oninput="saveApiKey(this.value)">
+  </div>
+
+  <div class="student-header">
+    <div class="student-avatar">JD</div>
+    <div class="student-greeting">
+      <h1>Hey Jordan 👋</h1>
+      <p>Year 11 · 4-day streak · 3 questions today</p>
+    </div>
+  </div>
+
+  <div class="streak-bar" id="streak-bar"></div>
+
+  <div class="topic-chips">
+    <div class="chip active">Number</div>
+    <div class="chip">Algebra</div>
+    <div class="chip">Ratio</div>
+    <div class="chip">Geometry</div>
+    <div class="chip">Statistics</div>
+  </div>
+
+  <div class="progress-row" id="progress-row"></div>
+
+  <div id="question-container">
+    <div class="question-card" id="q-card">
+      <div class="q-meta">
+        <span class="q-topic" id="q-topic">Number</span>
+        <span class="q-number" id="q-num">Question 1 of 3</span>
+      </div>
+      <div class="q-text" id="q-text">Loading your question...</div>
+      <div class="q-input-row">
+        <input class="q-input" type="text" id="q-input" placeholder="Your answer..." onkeydown="if(event.key==='Enter') checkAnswer()">
+        <button class="btn btn-primary" onclick="checkAnswer()" id="check-btn">Check</button>
+      </div>
+      <div class="feedback-box loading" id="feedback">
+        <span class="loading-dots">Generating your question<span>.</span><span>.</span><span>.</span></span>
+      </div>
+      <button class="hint-btn" id="hint-btn" onclick="getHint()" style="display:none">Need a hint?</button>
+    </div>
+    <button class="btn btn-ghost" id="next-btn" style="display:none; margin-top:8px" onclick="nextQuestion()">Next question →</button>
+  </div>
+
+  <div class="session-complete" id="session-complete">
+    <div class="complete-icon">🎯</div>
+    <div class="complete-title">Session done.</div>
+    <div class="complete-sub">3 questions, 5 minutes. That's how it's done.</div>
+    <div class="xp-badge">+45 XP earned</div>
+    <br>
+    <button class="btn btn-primary" onclick="restartSession()">Do another session</button>
+  </div>
+</div>
+
+<!-- TEACHER VIEW -->
+<div class="view" id="view-teacher">
+
+  <div class="dashboard-header">
+    <div>
+      <h1>Your class</h1>
+      <p>Westfield AP · Y10/Y11 Maths · 6 students</p>
+    </div>
+    <button class="btn btn-ghost" onclick="generateInsights()">AI insight ✦</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Active this week</div>
+      <div class="stat-value green">5/6</div>
+      <div class="stat-delta">↑ 1 from last week</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg completion</div>
+      <div class="stat-value amber">64%</div>
+      <div class="stat-delta">Target: 60%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Trending up</div>
+      <div class="stat-value green">3</div>
+      <div class="stat-delta">students improving</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Needs attention</div>
+      <div class="stat-value red">1</div>
+      <div class="stat-delta">not engaged 2 weeks</div>
+    </div>
+  </div>
+
+  <div class="students-grid" id="students-grid"></div>
+
+  <div class="detail-panel" id="detail-panel">
+    <div class="detail-header">
+      <h2 id="detail-name">Student detail</h2>
+      <button class="btn btn-ghost" onclick="closeDetail()">Close</button>
+    </div>
+    <div class="ai-insight" id="ai-insight">
+      <strong>AI insight</strong>
+      <span id="insight-text">Click "AI insight" above to generate a summary for this student.</span>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-stat">
+        <div class="detail-stat-label">Sessions this month</div>
+        <div class="detail-stat-value" id="d-sessions">—</div>
+      </div>
+      <div class="detail-stat">
+        <div class="detail-stat-label">Avg score</div>
+        <div class="detail-stat-value" id="d-score">—</div>
+      </div>
+    </div>
+    <div style="margin-bottom:12px; font-size:12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Topic coverage</div>
+    <div class="topic-rag" id="detail-rag"></div>
+    <div style="margin-top:16px; margin-bottom:8px; font-size:13px; color: var(--muted);">Teacher note</div>
+    <textarea class="teacher-note-input" id="teacher-note" placeholder="e.g. Responds well to real-world contexts. Avoids algebraic notation — try word problems instead."></textarea>
+    <button class="btn btn-primary" onclick="saveNote()">Save note</button>
+  </div>
+</div>
+
+<script>
+const STUDENTS = [
+  { id: 1, name: "Jordan D", year: "Y11", initials: "JD", color: "#7c6af7", momentum: "up", topics: {Number:"green",Algebra:"amber",Ratio:"green",Geometry:"red",Statistics:"amber"}, sessions: 12, score: "71%", spark: [3,5,4,6,7,6,8] },
+  { id: 2, name: "Amara K", year: "Y10", initials: "AK", color: "#3ecf8e", momentum: "up", topics: {Number:"green",Algebra:"green",Ratio:"amber",Geometry:"amber",Statistics:"red"}, sessions: 9, score: "68%", spark: [2,3,4,4,5,6,7] },
+  { id: 3, name: "Tyrell M", year: "Y11", initials: "TM", color: "#f5a623", momentum: "flat", topics: {Number:"amber",Algebra:"red",Ratio:"amber",Geometry:"amber",Statistics:"amber"}, sessions: 7, score: "54%", spark: [4,4,3,4,4,3,4] },
+  { id: 4, name: "Sasha P", year: "Y10", initials: "SP", color: "#f06565", momentum: "down", topics: {Number:"red",Algebra:"red",Ratio:"red",Geometry:"amber",Statistics:"red"}, sessions: 2, score: "38%", spark: [5,3,2,1,2,1,0] },
+  { id: 5, name: "Marcus L", year: "Y11", initials: "ML", color: "#c084fc", momentum: "up", topics: {Number:"green",Algebra:"green",Ratio:"green",Geometry:"amber",Statistics:"green"}, sessions: 14, score: "82%", spark: [5,6,6,7,7,8,9] },
+  { id: 6, name: "Kezia R", year: "Y10", initials: "KR", color: "#38bdf8", momentum: "flat", topics: {Number:"green",Algebra:"amber",Ratio:"green",Geometry:"green",Statistics:"amber"}, sessions: 8, score: "63%", spark: [3,4,5,4,5,5,5] },
+];
+
+const QUESTIONS = [
+  { topic: "Number", text: "A pair of trainers cost £85. They're reduced by 20% in a sale. What's the sale price?", answer: "68", hint: "Find 20% of £85 first, then subtract it from the original price." },
+  { topic: "Ratio", text: "Jake and Mia share £120 in the ratio 3:5. How much does Mia get?", answer: "75", hint: "Add the ratio parts together (3+5=8), then divide £120 by 8 to find one part." },
+  { topic: "Algebra", text: "Solve for x: 3x + 7 = 25", answer: "6", hint: "Subtract 7 from both sides first, then divide by 3." },
+  { topic: "Number", text: "What is 15% of 240?", answer: "36", hint: "Find 10% first (÷10), then find 5% (half of 10%), then add them." },
+  { topic: "Geometry", text: "A rectangle has length 12cm and width 5cm. What is its area?", answer: "60", hint: "Area of a rectangle = length × width." },
+];
+
+let currentQ = 0;
+let totalQ = 3;
+let answered = false;
+let selectedStudent = null;
+let apiKey = localStorage.getItem('mf_api_key') || '';
+let aiQuestions = [];
+let useAI = false;
+
+function saveApiKey(val) {
+  apiKey = val;
+  localStorage.setItem('mf_api_key', val);
+  if (val.length > 10) {
+    document.getElementById('api-banner').style.display = 'none';
+    useAI = true;
+    loadAIQuestion();
+  }
+}
+
+function switchView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  event.target.classList.add('active');
+  if (v === 'teacher') renderStudents();
+}
+
+// STREAK
+function renderStreak() {
+  const bar = document.getElementById('streak-bar');
+  bar.innerHTML = '';
+  const days = ['M','T','W','T','F'];
+  const done = [true, true, true, true, false];
+  days.forEach((d, i) => {
+    const el = document.createElement('div');
+    el.className = 'streak-day' + (done[i] ? ' done' : (i===4?' today':''));
+    bar.appendChild(el);
+  });
+}
+
+// PROGRESS
+function renderProgress() {
+  const row = document.getElementById('progress-row');
+  row.innerHTML = '';
+  for (let i = 0; i < totalQ; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot' + (i < currentQ ? ' done' : (i === currentQ ? ' active' : ''));
+    row.appendChild(dot);
+  }
+}
+
+// QUESTIONS
+async function loadAIQuestion() {
+  if (!apiKey || !useAI) {
+    loadStaticQuestion();
+    return;
+  }
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback-box loading';
+  fb.innerHTML = '<span class="loading-dots">Generating your question<span>.</span><span>.</span><span>.</span></span>';
+  fb.style.display = 'block';
+  document.getElementById('q-text').textContent = '...';
+  document.getElementById('hint-btn').style.display = 'none';
+  document.getElementById('check-btn').disabled = true;
+
+  const topics = ['Number', 'Algebra', 'Ratio', 'Geometry', 'Statistics'];
+  const topic = topics[Math.floor(Math.random() * topics.length)];
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        system: `You generate short GCSE maths questions for disengaged 15-year-olds in a Pupil Referral Unit. Use real-world contexts they find relevant (sports, money, phones, food, music). Keep language simple and non-academic. Respond ONLY with valid JSON: {"topic":"string","question":"string","answer":"string (number only)","hint":"string"}`,
+        messages: [{ role: 'user', content: `Generate a ${topic} question at GCSE foundation level.` }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content[0].text;
+    const clean = text.replace(/```json|```/g, '').trim();
+    const q = JSON.parse(clean);
+    aiQuestions[currentQ] = q;
+    document.getElementById('q-topic').textContent = q.topic;
+    document.getElementById('q-text').textContent = q.question;
+    fb.style.display = 'none';
+    document.getElementById('hint-btn').style.display = 'block';
+    document.getElementById('check-btn').disabled = false;
+  } catch(e) {
+    loadStaticQuestion();
+  }
+}
+
+function loadStaticQuestion() {
+  const q = QUESTIONS[currentQ % QUESTIONS.length];
+  document.getElementById('q-topic').textContent = q.topic;
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('feedback').style.display = 'none';
+  document.getElementById('hint-btn').style.display = 'block';
+  document.getElementById('check-btn').disabled = false;
+}
+
+function getCurrentQ() {
+  if (useAI && aiQuestions[currentQ]) return aiQuestions[currentQ];
+  return QUESTIONS[currentQ % QUESTIONS.length];
+}
+
+function checkAnswer() {
+  if (answered) return;
+  const input = document.getElementById('q-input');
+  const val = input.value.trim();
+  if (!val) return;
+
+  const q = getCurrentQ();
+  const correct = val === q.answer || parseFloat(val) === parseFloat(q.answer);
+  const fb = document.getElementById('feedback');
+
+  if (correct) {
+    input.classList.add('correct');
+    fb.className = 'feedback-box correct';
+    fb.innerHTML = '✓ Correct! ' + (q.explanation || 'Nice work.');
+  } else {
+    input.classList.add('wrong');
+    fb.className = 'feedback-box wrong';
+    fb.innerHTML = '✗ Not quite. The answer is <strong>' + q.answer + '</strong>. ' + (q.hint || '');
+  }
+
+  answered = true;
+  document.getElementById('next-btn').style.display = 'inline-block';
+  document.getElementById('hint-btn').style.display = 'none';
+}
+
+async function getHint() {
+  const q = getCurrentQ();
+  const fb = document.getElementById('feedback');
+
+  if (!apiKey || !useAI) {
+    fb.className = 'feedback-box hint';
+    fb.innerHTML = '💡 ' + (q.hint || 'Break it down step by step.');
+    return;
+  }
+
+  fb.className = 'feedback-box loading';
+  fb.innerHTML = '<span class="loading-dots">Thinking<span>.</span><span>.</span><span>.</span></span>';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 120,
+        system: 'Give a short, encouraging hint for a GCSE maths question. 1-2 sentences, casual tone, no spoilers. Start with 💡',
+        messages: [{ role: 'user', content: 'Question: ' + q.question || q.text }]
+      })
+    });
+    const data = await res.json();
+    fb.className = 'feedback-box hint';
+    fb.innerHTML = data.content[0].text;
+  } catch(e) {
+    fb.className = 'feedback-box hint';
+    fb.innerHTML = '💡 ' + (q.hint || 'Break it down into smaller steps.');
+  }
+}
+
+function nextQuestion() {
+  currentQ++;
+  answered = false;
+
+  const input = document.getElementById('q-input');
+  input.value = '';
+  input.className = 'q-input';
+
+  document.getElementById('feedback').style.display = 'none';
+  document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('q-num').textContent = `Question ${Math.min(currentQ+1, totalQ)} of ${totalQ}`;
+
+  renderProgress();
+
+  if (currentQ >= totalQ) {
+    document.getElementById('question-container').style.display = 'none';
+    document.getElementById('session-complete').classList.add('show');
+  } else {
+    if (useAI) {
+      loadAIQuestion();
+    } else {
+      loadStaticQuestion();
+    }
+  }
+}
+
+function restartSession() {
+  currentQ = 0;
+  answered = false;
+  document.getElementById('session-complete').classList.remove('show');
+  document.getElementById('question-container').style.display = 'block';
+  document.getElementById('q-num').textContent = `Question 1 of ${totalQ}`;
+  document.getElementById('q-input').value = '';
+  document.getElementById('q-input').className = 'q-input';
+  document.getElementById('feedback').style.display = 'none';
+  document.getElementById('next-btn').style.display = 'none';
+  renderProgress();
+  if (useAI) loadAIQuestion(); else loadStaticQuestion();
+}
+
+// TEACHER
+function renderStudents() {
+  const grid = document.getElementById('students-grid');
+  grid.innerHTML = '';
+  STUDENTS.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'student-card' + (selectedStudent?.id === s.id ? ' selected' : '');
+    card.onclick = () => openStudent(s);
+
+    const mLabel = s.momentum === 'up' ? '↑ Improving' : s.momentum === 'flat' ? '→ Stable' : '↓ Disengaging';
+    const mClass = 'momentum-' + s.momentum;
+
+    const ragHtml = Object.entries(s.topics).map(([t, r]) =>
+      `<span class="rag-chip rag-${r}">${t}</span>`
+    ).join('');
+
+    const sparkHtml = s.spark.map((v, i) => {
+      const h = Math.max(10, (v / 10) * 100);
+      const active = i === s.spark.length - 1;
+      return `<div class="spark-bar ${active?'active':''}" style="height:${h}%"></div>`;
+    }).join('');
+
+    card.innerHTML = `
+      <div class="sc-header">
+        <div class="sc-avatar" style="background:${s.color}22; color:${s.color}">${s.initials}</div>
+        <div>
+          <div class="sc-name">${s.name}</div>
+          <div class="sc-year">${s.year}</div>
+        </div>
+        <span class="momentum-badge ${mClass}">${mLabel}</span>
+      </div>
+      <div class="topic-rag">${ragHtml}</div>
+      <div class="sparkline">${sparkHtml}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function openStudent(s) {
+  selectedStudent = s;
+  renderStudents();
+  document.getElementById('detail-name').textContent = s.name;
+  document.getElementById('d-sessions').textContent = s.sessions;
+  document.getElementById('d-score').textContent = s.score;
+  const rag = document.getElementById('detail-rag');
+  rag.innerHTML = Object.entries(s.topics).map(([t, r]) =>
+    `<span class="rag-chip rag-${r}" style="font-size:12px; padding:5px 12px">${t} — ${r.charAt(0).toUpperCase()+r.slice(1)}</span>`
+  ).join('');
+  document.getElementById('detail-panel').classList.add('show');
+  document.getElementById('insight-text').textContent = 'Click "AI insight" above to generate a summary for this student.';
+  document.getElementById('teacher-note').value = '';
+  document.getElementById('detail-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeDetail() {
+  selectedStudent = null;
+  document.getElementById('detail-panel').classList.remove('show');
+  renderStudents();
+}
+
+async function generateInsights() {
+  if (!selectedStudent) {
+    alert('Select a student first.');
+    return;
+  }
+  const insightEl = document.getElementById('insight-text');
+  const s = selectedStudent;
+
+  if (!apiKey) {
+    insightEl.textContent = `${s.name} has completed ${s.sessions} sessions with an average score of ${s.score}. Their strongest topics are ${Object.entries(s.topics).filter(([,v])=>v==='green').map(([k])=>k).join(', ')||'none yet'}. Weaker areas include ${Object.entries(s.topics).filter(([,v])=>v==='red').map(([k])=>k).join(', ')||'none flagged'}.`;
+    return;
+  }
+
+  insightEl.innerHTML = '<span class="loading-dots">Analysing<span>.</span><span>.</span><span>.</span></span>';
+
+  const weakTopics = Object.entries(s.topics).filter(([,v])=>v==='red').map(([k])=>k);
+  const strongTopics = Object.entries(s.topics).filter(([,v])=>v==='green').map(([k])=>k);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 150,
+        system: 'You write concise, practical teacher insights about students in a Pupil Referral Unit. 2-3 sentences. Focus on what the teacher should do next, not just what the data shows. Tone: professional but warm.',
+        messages: [{ role: 'user', content: `Student: ${s.name}, ${s.year}. Sessions: ${s.sessions}. Avg score: ${s.score}. Momentum: ${s.momentum}. Strong topics: ${strongTopics.join(', ')||'none'}. Weak topics: ${weakTopics.join(', ')||'none'}. Write a teacher insight.` }]
+      })
+    });
+    const data = await res.json();
+    insightEl.textContent = data.content[0].text;
+  } catch(e) {
+    insightEl.textContent = `${s.name} shows ${s.momentum === 'up' ? 'positive momentum' : s.momentum === 'flat' ? 'stable engagement' : 'declining engagement'} over recent weeks. Focus areas: ${weakTopics.join(', ')||'review all topics'}.`;
+  }
+}
+
+function saveNote() {
+  alert('Note saved for ' + (selectedStudent?.name || 'student') + '.');
+}
+
+// INIT
+renderStreak();
+renderProgress();
+if (apiKey && apiKey.length > 10) {
+  document.getElementById('api-banner').style.display = 'none';
+  useAI = true;
+  loadAIQuestion();
+} else {
+  loadStaticQuestion();
+}
+document.getElementById('api-key-input').value = apiKey;
+</script>
+</body>
+</html>
